@@ -1,0 +1,8 @@
+[ERR_INVALID_USER_NAME_PASSWORD]
+zh-CN = "用户名或密码错误"
+en-US = "Invalid username or password"
+
+[ERR_SESSION_EXPIRED]
+zh-CN = "会话过期，请重新登陆"
+en-US = "Session expired, please login"
+

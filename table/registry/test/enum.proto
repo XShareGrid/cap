@@ -1,0 +1,10 @@
+syntax="proto3";
+package rt;
+
+import "github.com/XShareGrid/cap/proto/extension/enum.proto";
+
+enum TestEnum {
+    TE_1 = 0 [ (extension.option_name) = "测试1" ];
+    TE_2 = 1 [ (extension.option_name) = "测试2" ];
+}
+

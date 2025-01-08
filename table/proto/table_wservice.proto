@@ -1,0 +1,559 @@
+syntax = "proto3";
+
+package cap;
+option go_package = "github.com/XShareGrid/cap/table/proto/go;cap";
+
+// 所有名字按Linux文件名限制
+// ^[^+-./\t\b@#$%*()\[\]][^/\t\b@#$%*()\[\]]{1,254}$
+
+
+message ConditionOperator {
+  string id = 1;
+  string name = 2;
+}
+
+// ValueType 列类型
+enum ValueType {
+  // 字符串
+  VT_STRING = 0;
+  // 整型
+  VT_INT = 1;
+  // 浮点
+  VT_DOUBLE = 2;
+  // 日期
+  VT_DATE = 3;
+  // 时间
+  VT_TIME = 4;
+  // 布尔
+  VT_BOOLEAN = 5;
+  // 选项
+  VT_OPTION = 6;
+}
+
+// OptionValue 选项值（如枚举，小列表）
+message OptionValue {
+  int32 id = 1;
+  string name = 2;
+}
+
+enum HrefStyle {
+  HSNone = 0;
+  HSNewTab = 1;
+  HSDialog = 2;
+  HSEdit = 3;
+  HSCustom = 4;
+}
+
+// Value 表示通用的值，与ValueType一一对应
+message Value {
+  oneof v {
+    string v_string = 1;
+    int32 v_int = 2;
+    double v_double = 3;
+    // 2020-05-03 UTC
+    string v_date = 4;
+    // RFC3339 UTC
+    string v_time = 5;
+    bool v_bool = 6;
+    OptionValue v_option = 7;
+  }
+  string href = 10;
+}
+
+// ValueFunction 用于过滤的方法，返回一个值
+message ValueFunction {
+  // id
+  string id = 1;
+  // 名字
+  string name = 2;
+}
+
+// GetTableInfoReq 获取表信息
+message GetTableInfoReq {
+  // 表id
+  string table_id = 1;
+}
+
+// GetTableInfoRsp 获取表回复
+message GetTableInfoRsp {
+  // 表id
+  string id = 1;
+  // 表名字 用户可读
+  string name = 2;
+  // 描述 用户可读
+  string desc = 3;
+  // 导出文件名前缀
+  string export_file_prefix = 4;
+}
+
+// FilterValue 过滤值
+message FilterValue {
+  // 字面上的值，由用户手动输入
+  Value literal_values = 1;
+}
+
+// Condition 过滤条件
+message Condition {
+  // 列id，使用 Dot'.'隔开，支持一级的联表查询(暂不支持)
+  string column_id = 1;
+  // 操作符id
+  string operator_id = 2;
+  // 值
+  repeated FilterValue values = 3;
+}
+
+message PageParam {
+  // 页码
+  int32 page = 1;
+  // 单页数量 0代表请求所有
+  int32 page_size = 2;
+}
+
+// Order 排序方向
+enum Order {
+  // 顺序
+  O_ASC = 0;
+  // 逆序
+  O_DESC = 1;
+}
+
+// OrderParam 排序参数
+message OrderParam {
+  // 列id
+  string column_id = 1;
+  // 排序方向
+  Order order = 2;
+}
+
+// ExportTableRsp 导出表格回复
+message ExportTableRsp {
+  string file_name = 1;
+  // excel binary
+  bytes excel_data = 2;
+}
+
+// PageInfo 分页信息
+message PageInfo {
+  // 当前页
+  int32 current_page = 1;
+  // 每页数量
+  int32 page_size = 2;
+  // 总页数
+  int32 total_pages = 3;
+  // 总结果数
+  int32 total_results = 4;
+}
+
+// CellLink 单元格链接
+message CellLink {
+  // 表id
+  string remote_table_id = 1;
+  // 在表中的列id
+  string col_id = 2;
+  // 在外部表中对应的列id
+  string remote_search_col_id = 3;
+  // 在外部表中的列id
+  string remote_value_col_id = 4;
+}
+
+// 单元格
+message Cell {
+  // 值
+  // TODO deprecated.
+  Value value = 1;
+
+  // 列id
+  string column_id = 2;
+  // 单元格链接
+  CellLink link = 3;
+  // 多个值的情况，替换field 1
+  repeated Value values = 4;
+  // 超链接风格
+  HrefStyle href_style = 5;
+}
+
+// TableRow 表行
+message TableRow {
+  // 该行在表中的唯一标记
+  string id = 1;
+  // 单元格列表 顺序与模板一致
+  repeated Cell cells = 2;
+  // 支持的操作类型
+  repeated RowAction supported_actions = 3;
+}
+
+// GetTableRowsReq 获取列表行请求
+message GetTableRowsReq {
+  // 表id
+  string table_id = 1;
+  // 排序参数
+  OrderParam order = 2;
+  // 分页参数
+  PageParam page = 3;
+  // 模板
+  TemplateQuery tpl = 4;
+}
+
+// GetTableRowsRsp 获取表格行回复
+message GetTableRowsRsp {
+  // 行列表
+  repeated TableRow rows = 1;
+  // 分页信息
+  PageInfo page_info = 2;
+  // 聚合结果 2020.01.08 多个聚合结果
+  repeated AggregateResult aggregate_result = 3;
+}
+
+// GetTableRowByIDReq 根据ID获取行
+message GetTableRowByIDReq {
+  // 表id
+  string table_id = 1;
+  // 行ID
+  string row_id = 2;
+  // 模板 输出列
+  TemplateQuery tpl = 3;
+}
+
+// GetTableRowByIDRsp 根据ID获取行结果
+message GetTableRowByIDRsp {
+  // 表行
+  TableRow row = 1;
+}
+
+// ColumnLink 列链接，表示该列位另外一个table的某一列
+message ColumnLink {
+  // 表id
+  string table_id = 1;
+  // 列id
+  string column_id = 2;
+}
+
+// ColumnFilterMethod 列过滤方法
+message ColumnFilterMethod {
+  ConditionOperator operator = 1;
+  FilterValueType value_type = 2;
+}
+
+// FilterValueType 筛选右值类型
+enum FilterValueType {
+  // FVT_NULL 空
+  FVT_NULL = 0;
+  // FVT_SINGLE 单选
+  FVT_SINGLE = 1;
+  // FVT_MULTIPLE 多选
+  FVT_MULTIPLE = 2;
+}
+
+// TableColumn 表列
+message TableColumn {
+  // 列id，在表中的唯一标记
+  string id = 1;
+  // 列名，用户可读
+  string name = 2;
+  // 列值类型
+  ValueType value_type = 3;
+  // 支持的筛选类型，长度为0代表不支持筛选
+  repeated ColumnFilterMethod supported_filters = 4;
+  // 支持的聚合方法，长度为0代表不支持聚合
+  repeated AggregateMethod supported_aggregate_method = 5;
+  // 支持过滤的方法，如：现在/今天/明天...
+  // TODO 与Method合并，不再支持该字段
+  repeated ValueFunction supported_filter_value_functions = 6;
+  // 关联列
+  ColumnLink link = 7;
+  // 是否支持排序
+  bool order_able = 8;
+  // 选项类型ID 仅当value_type = VT_OPTIONS时有效
+  string option_type_id = 9;
+  // value_type = VT_OPTION时，这里提供所有的选项
+  repeated OptionValue options = 10;
+  // 是否内部使用，内部使用的列界面可不显示
+  bool internal = 11;
+  // 是否必须
+  bool required = 12;
+  // 宽度比例 EH-148
+  double display_width_rate = 13;
+}
+
+// TemplateQuery 模板请求
+message TemplateQuery {
+  // id/内容二选一
+  oneof tpl {
+    // 模板id
+    string tpl_id = 1;
+    // 临时模板，代表临时组合的模板
+    TemplateBody tmp_tpl = 2;
+  }
+}
+
+// GetTableColumnsReq 获取列请求
+message GetTableColumnsReq {
+  // 表id
+  string table_id = 1;
+  // 模板
+  TemplateQuery tpl = 2;
+}
+
+// GetTableColumnsRsp 获取列回复
+message GetTableColumnsRsp {
+  // 列 列表
+  repeated TableColumn columns = 1;
+}
+
+// FileAccessType 模板访问权限类型
+enum FileAccessType {
+  // 私有
+  TA_PRIVATE = 0;
+  // 公开
+  TA_PUBLIC = 1;
+  // 共享
+  TA_SHARED = 2;
+}
+
+// AggregateMethod 聚合方式
+enum AggregateMethod {
+  // 无
+  AM_NONE = 0;
+  // 求和
+  AM_SUM = 1;
+  // 平均
+  AM_AVG = 2;
+}
+
+// AggregateResult 聚合结果
+message AggregateResult {
+  // 列id
+  string column_id = 1;
+  // 列名
+  string column_name = 2;
+  // 聚合方式
+  AggregateMethod method = 3;
+  // 聚合结果
+  Value value = 5;
+}
+
+// 用户信息
+message UserInfo {
+  // id
+  int32 id = 1;
+  // 用户名 read-only
+  string user_name = 2;
+  // 姓名 read-only
+  string display_name = 3;
+}
+
+// TemplateColumn 模板列
+message TemplateColumn {
+  // 列id
+  string column_id = 1;
+  // 聚合方式
+  AggregateMethod aggregate_method = 2;
+  // 是否可见
+  bool visible = 3;
+  // 列详情，read-only 创建时无需填写
+  TableColumn column_detail = 4;
+}
+
+// OutputBody 模板内容
+message OutputBody {
+  // 可见列
+  repeated TemplateColumn visible_columns = 1;
+}
+
+// FileInfo 文件信息
+message FileInfo {
+  // 权限
+  FileAccessType access = 1;
+  // 共享账号列表，仅access = SHARED
+  repeated int32 share_list = 2;
+  // 创建用户 无需前端填写
+  UserInfo create_user = 3;
+  // 创建时间 无需前端填写
+  string create_time = 4;
+  // 修改时间 无需前端填写
+  string modify_time = 5;
+}
+
+message TemplateBody {
+  // 过滤器 输入配置 不影响列的筛选
+  FilterBody filter = 1;
+  // 输出配置
+  OutputBody output = 2;
+}
+
+// Template 列表模板
+message Template {
+  // 预留 "TPL_EMPTY" 为空模板，每个列表都有空模板(展示所有列)，只读
+  // 预留 "TPL_DEFAULT" 为默认模板id，每个列表都有默认模板，只读
+  // 创建时不填
+  string id = 1;
+  // 文件名，全局唯一
+  string name = 2;
+  // 表id;
+  string table_id = 3;
+  // 文件信息
+  FileInfo file_info = 4;
+  // 模板内容
+  TemplateBody body = 5;
+}
+
+// GetTableTemplatesReq 获取模板列表请求
+message GetTableTemplatesReq {
+  // 表id
+  string table_id = 1;
+}
+
+// GetTableTemplatesRsp 获取模板列表回复
+message GetTableTemplatesRsp {
+  // 模板列表
+  repeated Template templates = 1;
+}
+
+// CreateTableTemplateReq 创建模板请求
+message CreateTableTemplateReq {
+  // 模板
+  Template template = 1;
+}
+
+// CreateTableTemplateRsp 创建模板回复
+message CreateTableTemplateRsp {
+  // 模板 带id
+  Template template = 1;
+}
+
+// DeleteTableTemplateReq 删除模板请求
+message DeleteTableTemplateReq {
+  // 模板id
+  string template_id = 1;
+}
+
+// DeleteTableTemplateRsp 删除模板回复
+message DeleteTableTemplateRsp {}
+
+// Filter 过滤方案内容
+message FilterBody {
+  // 条件组合
+  repeated Condition conditions = 1;
+}
+
+enum RowActionType {
+  // 自定义
+  RAT_CUSTOM = 0;
+  // JSON Schema表单
+  RAT_JSON_FORM = 2;
+  // 超链接类型
+  RAT_HREF = 3;
+}
+
+message HrefAction {
+  // 链接地址
+  string href = 1;
+  // 超链接风格
+  HrefStyle href_style = 5;
+}
+
+// RowAction 行操作
+message RowAction {
+  string id = 1;
+  string name = 2;
+  RowActionType action_type = 3;
+  // action_type = RAT_JSON_FORM 时有值
+  bytes json_form_schema = 4;
+  // action_type = RAT_HREF 时有值
+  HrefAction href_action = 5;
+}
+
+// DoRowFormActionReq 行操作表单请求
+message DoRowFormActionReq {
+  // 表id
+  string table_id = 1;
+  // 操作id
+  string action_id = 2;
+  // 行号
+  string row_id = 3;
+  // 表单JSON
+  bytes form_json = 4;
+}
+
+// 行操作回复
+message DoRowFormActionRsp {}
+
+// GetTableColumnOptionsReq 获取列选项请求
+message GetTableColumnOptionsReq {
+  string table_id = 1;
+  string column_id = 2;
+}
+
+// GetTableColumnOptionsReq 获取列选项请求
+message GetTableColumnOptionsRsp {
+  // 选项列表
+  repeated OptionValue options = 1;
+  // 唯一标记选项类型的ID
+  string OptionTypeID = 2;
+}
+
+// GetOptionsReq 获取枚举列表
+message GetOptionsReq { string OptionTypeID = 1; }
+
+// GetTableRowsLiteReq 获取行列请求Lite
+// 仅支持筛选，不支持过滤列，不支持分页和排序
+message GetTableRowsLiteReq {
+  // 表id
+  string table_id = 1;
+  // 请求 column_id=?  xxx=?&yyy=?
+  string query = 2;
+}
+
+// GetTableRowsLiteRsp 获取行列表
+message GetTableRowsLiteRsp {
+  // 行列表json数组
+  repeated string rows = 1;
+}
+
+// TableWService 表格服务
+// 每个子系统都可能提供该服务 /cap.TableWService，并统一通过EAP的端口暴露
+// 前端可使用http header["Subsystem"]或者["Referer"]来指定子系统
+// 例如访问[mts]下的表格服务，可以如下设置：
+//                示例1: HTTP Header["Subsystem"] = "/mts"
+//                示例2: HTTP Header["Referer"] = "/mts/...."
+// 注意：上线系统中referer由浏览器自动设置，无需手动设置，调试时可使用Subsystem
+// Header
+service TableWService {
+  // 表
+  // GetTableInfo 获取表信息
+  rpc GetTableInfo(GetTableInfoReq) returns (GetTableInfoRsp) {};
+
+  // 模板
+  // GetTableTemplates 获取表模板信息
+  rpc GetTableTemplates(GetTableTemplatesReq) returns (GetTableTemplatesRsp) {};
+  // CreateTableTemplate 创建模板
+  rpc CreateTableTemplate(CreateTableTemplateReq)
+      returns (CreateTableTemplateRsp) {};
+  // DeleteTableTemplate 删除模板
+  rpc DeleteTableTemplate(DeleteTableTemplateReq)
+      returns (DeleteTableTemplateRsp) {};
+  // UpdateTableTemplate 更新模板
+  rpc UpdateTableTemplate(CreateTableTemplateReq)
+      returns (CreateTableTemplateRsp) {};
+
+  // 数据
+  // GetTableColumns 获取表列
+  rpc GetTableColumns(GetTableColumnsReq) returns (GetTableColumnsRsp) {};
+  // GetTableRows 获取表行
+  rpc GetTableRows(GetTableRowsReq) returns (GetTableRowsRsp) {};
+  // GetTableRowByID 精确获取一行
+  rpc GetTableRowByID(GetTableRowByIDReq) returns (GetTableRowByIDRsp) {};
+  // DoExportTable 导出表
+  rpc DoExportTable(GetTableRowsReq) returns (ExportTableRsp) {};
+  // GetTableColumnOptions 获取列选项列表（仅ValueType = VT_OPTION时可获取）
+  rpc GetTableColumnOptions(GetTableColumnOptionsReq)
+      returns (GetTableColumnOptionsRsp) {};
+  // GetTableRowsLite 简单版获取行列表接口
+  rpc GetTableRowsLite(GetTableRowsLiteReq) returns (GetTableRowsLiteRsp) {};
+
+  // GetOptions 根据Option ID获取
+  rpc GetOptions(GetOptionsReq) returns (GetTableColumnOptionsRsp) {};
+
+  // 执行表单操作
+  rpc DoRowFormAction(DoRowFormActionReq) returns (DoRowFormActionRsp) {};
+}

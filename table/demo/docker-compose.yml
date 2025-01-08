@@ -1,0 +1,34 @@
+networks:
+  table-demo:
+    driver: bridge
+services:
+
+  table-demo-nginx:
+    container_name: table-demo-nginx
+    image: nginx
+    restart: always
+    ports:
+      - 8000:8000/tcp
+    privileged: true
+    networks:
+      table-demo: {}
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/html/dist:/usr/share/nginx/html
+
+  table-demo-app:
+    container_name: table-demo-app
+    build:
+      context: ./
+      dockerfile: ./app/Dockerfile
+    image: table-demo-app:v2
+    restart: always
+    privileged: true
+    networks:
+      table-demo: {}
+    volumes:
+      - ./app/etc:/home/etc
+    ports:
+      - 10086:10086/tcp
+
+version: '3.7'

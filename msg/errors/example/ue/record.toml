@@ -1,0 +1,41 @@
+[ERR_RECORD_1]
+zh-CN = "删除记录索引失败"
+
+[ERR_RECORD_2]
+zh-CN = "创建记录表[%s]失败"
+
+[ERR_RECORD_3]
+zh-CN = "查询所有记录索引信息失败"
+
+[ERR_RECORD_4]
+zh-CN = "更新记录索引[%s]失败"
+
+[ERR_RECORD_5]
+zh-CN = "根据时间[%s]查询记录索引信息失败"
+
+[ERR_RECORD_6]
+zh-CN = "创建记录表[%s]索引信息失败"
+
+[ERR_RECORD_7]
+zh-CN = "根据条件查询索引信息失败"
+
+[ERR_RECORD_8]
+zh-CN = "根据记录ID查找记录信息失败"
+
+[ERR_RECORD_9]
+zh-CN = "根据条件查询记录信息失败"
+
+[ERR_RECORD_10]
+zh-CN = "根据条件查询记录信息总行数失败"
+
+[ERR_RECORD_11]
+zh-CN = "根据记录ID[%d/%s]删除记录信息失败"
+
+[ERR_RECORD_12]
+zh-CN = "根据记录ID[%d/%s]更新记录信息失败"
+
+[ERR_RECORD_13]
+zh-CN = "创建记录信息失败"
+
+[ERR_RECORD_14]
+zh-CN = "根据记录ID[%d]分表失败"

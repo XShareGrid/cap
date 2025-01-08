@@ -1,0 +1,11 @@
+app:
+  httpport: 8001
+  grpcport: 8002
+  docport: 10086
+  
+mysql:
+  host: 192.168.0.109
+  port: 3306
+  user: root
+  password: 125801
+  database: tabletest

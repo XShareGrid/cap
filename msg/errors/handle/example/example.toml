@@ -1,0 +1,6 @@
+[ERR_INTERNAL_1]
+zh-CN = "内部错误1"
+
+
+[ERR_INTERNAL_2]
+zh-CN = "内部错误2[%v]"

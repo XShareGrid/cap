@@ -1,0 +1,7 @@
+[ERR_TEST_1]
+zh-CN = "错误一"
+en-US = "error one"
+
+[ERR_TEST_2]
+zh-CN = "错误二 %d, %s"
+en-US = "Error two %d, %s"

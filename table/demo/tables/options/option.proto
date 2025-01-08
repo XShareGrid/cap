@@ -1,0 +1,11 @@
+syntax = "proto3";
+package options;
+
+import "extension/enum.proto";
+
+enum TestOption {
+  O1 = 0 [ (extension.option_name) = "-" ];
+  O2 = 1 [ (extension.option_name) = "选项AAA" ];
+  O3 = 2 [ (extension.option_name) = "选项BBB" ];
+  O4 = 3 [ (extension.option_name) = "选项CCC" ];
+}

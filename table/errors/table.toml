@@ -11,7 +11,7 @@ zh-CN = "该操作(%s)不是一个合法的表单操作"
 zh-CN = "临时表单不支持模板操作"
 
 # registry
-[ErrDupplicateNodeID]
+[ErrDuplicateNodeID]
 zh-CN = "重复节点ID(%s)"
 [ErrNodeNotExist] 
 zh-CN = "节点ID(%s)不存在"
@@ -33,7 +33,7 @@ zh-CN = "模板输出列为空"
 zh-CN = "无效的操作ID(%s)"
 [ErrIllegalArguments]
 zh-CN = "非法参数(%s)"
-[ErrDupplicateColumnID]
+[ErrDuplicateColumnID]
 zh-CN = "重复列ID(%s)"
 
 # mysql

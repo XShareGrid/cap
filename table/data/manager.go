@@ -48,7 +48,7 @@ func GlobalManager() *Manager {
 // RegisterDriver registers driver
 func (d *Manager) RegisterDriver(tableID string, driver driver.Driver) error {
 	if _, ok := d.m.Load(tableID); ok {
-		return errors.Wrap(ErrDupplicateDriverForTable).FillDebugArgs(tableID).Log()
+		return errors.Wrap(ErrDuplicateDriverForTable).FillDebugArgs(tableID).Log()
 	}
 	d.m.Store(tableID, driver)
 	return nil

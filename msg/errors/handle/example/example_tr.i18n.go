@@ -5,7 +5,7 @@ package main
 import (
 	"fmt"
 
-	"gitlab.pintechs.com/eh/energy-backend/cap/msg/i18n"
+	"github.com/XShareGrid/cap/msg/i18n"
 	"golang.org/x/text/language"
 )
 
@@ -20,7 +20,7 @@ func initTrRegistry() {
 func (l example_langRegistry) addTranslation(id i18n.TrID, lang language.Tag, translation string) error {
 	if ts, ok := example_lr[id]; ok {
 		if _, ok := ts[lang]; ok {
-			return fmt.Errorf("dupplicate translation for [%s#%s]", id, lang.String())
+			return fmt.Errorf("duplicate translation for [%s#%s]", id, lang.String())
 		}
 		l[id][lang] = translation
 	} else {

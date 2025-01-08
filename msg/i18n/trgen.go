@@ -175,7 +175,7 @@ func generateLangFromToml(workdir, packageName string, tf os.FileInfo) {
 			supportLanguages[l] = nil
 			dk := id + "#" + l
 			if _, ok := idLangDupMap[dk]; ok {
-				log.Fatalf("dupplicate translation for [%s]", dk)
+				log.Fatalf("duplicate translation for [%s]", dk)
 			}
 			idLangDupMap[dk] = nil
 			if l == "zh-CN" {
@@ -220,7 +220,7 @@ func initTrRegistry() {
 func (l {{.PackageName}}_langRegistry) addTranslation(id i18n.TrID, lang language.Tag, translation string) error {
 	if ts, ok := {{.PackageName}}_lr[id]; ok {
 		if _, ok := ts[lang]; ok {
-			return fmt.Errorf("dupplicate translation for [%s#%s]", id, lang.String())
+			return fmt.Errorf("duplicate translation for [%s#%s]", id, lang.String())
 		}
 		l[id][lang] = translation
 	} else {

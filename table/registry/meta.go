@@ -161,7 +161,7 @@ func (tcdl *TableColumnDescriptorList) generateIndex() error {
 	newIdx := make(map[string]int)
 	for i, col := range tcdl.list {
 		if _, ok := newIdx[col.ID]; ok {
-			return errors.Wrap(ErrDupplicateColumnID).FillDebugArgs(col.ID)
+			return errors.Wrap(ErrDuplicateColumnID).FillDebugArgs(col.ID)
 		}
 		newIdx[col.ID] = i
 	}
@@ -326,10 +326,10 @@ func (tmd *TableMetaDataImpl) addColumns(column *TableColumnDescriptor) error {
 	defer tmd.dataLock.Unlock()
 	for _, c := range tmd.columns.list {
 		if column.ID == c.ID {
-			return errors.Wrap(ErrDupplicateColumnID).FillDebugArgs(column.Name).Log()
+			return errors.Wrap(ErrDuplicateColumnID).FillDebugArgs(column.Name).Log()
 		}
 		if column.Name == c.Name {
-			return errors.Wrap(ErrDupplicateColumnName).FillDebugArgs(column.Name).Log()
+			return errors.Wrap(ErrDuplicateColumnName).FillDebugArgs(column.Name).Log()
 		}
 	}
 	tmd.columns.list = append(tmd.columns.list, column)
@@ -767,7 +767,7 @@ func (tmd *TableMetaDataImpl) ValidateTpl(tpl *cap.Template, userLanguage string
 	cols := make(map[string]interface{})
 	for _, c := range tpl.Body.Output.VisibleColumns {
 		if _, ok := cols[c.ColumnId]; ok {
-			return errors.Wrap(ErrDupplicateColumnID).FillDebugArgs(c.ColumnId).Log()
+			return errors.Wrap(ErrDuplicateColumnID).FillDebugArgs(c.ColumnId).Log()
 		}
 		cols[c.ColumnId] = nil
 		desc, err := tmd.Columns().Find(c.ColumnId)

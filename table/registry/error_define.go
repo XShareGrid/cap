@@ -2,20 +2,20 @@ package registry
 
 import "github.com/XShareGrid/cap/msg/errors"
 
-// ErrDupplicateNodeID dupplicate function id
-var ErrDupplicateNodeID = errors.New("dupplicate node id (%s)")
+// ErrDuplicateNodeID duplicate function id
+var ErrDuplicateNodeID = errors.New("duplicate node id (%s)")
 
-// ErrDupplicateNodeFiled dupplicate function name
-var ErrDupplicateNodeFiled = errors.New("dupplicate node filed(%s)")
+// ErrDuplicateNodeFiled duplicate function name
+var ErrDuplicateNodeFiled = errors.New("duplicate node filed(%s)")
 
 // ErrNodeNotExist id 404
 var ErrNodeNotExist = errors.New("node is not exist id = (%s)")
 
-// ErrDupplicateColumnID column id
-var ErrDupplicateColumnID = errors.New("dupplicate column id = (%s)")
+// ErrDuplicateColumnID column id
+var ErrDuplicateColumnID = errors.New("duplicate column id = (%s)")
 
-// ErrDupplicateColumnName column name
-var ErrDupplicateColumnName = errors.New("dupplicate column name = (%s)")
+// ErrDuplicateColumnName column name
+var ErrDuplicateColumnName = errors.New("duplicate column name = (%s)")
 
 // ErrParseFieldType failed to parse field type
 var ErrParseFieldType = errors.New("failed to parse field type: (%s)")

@@ -112,7 +112,7 @@ func (o *OptionReg) GetAllOptions() []OptionType {
 // Register ...
 func (o *OptionReg) Register(optionTypeID string, values []*cap.OptionValue) error {
 	if _, ok := o.m.Load(optionTypeID); ok {
-		return errors.Wrap(ErrDupplicateNodeID).FillDebugArgs(optionTypeID)
+		return errors.Wrap(ErrDuplicateNodeID).FillDebugArgs(optionTypeID)
 	}
 	ols := &optionListStore{
 		id:   optionTypeID,

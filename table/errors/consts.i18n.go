@@ -31,11 +31,11 @@ const ErrDisableSharingFormToAllUsers = i18n.TrID("v_errors_ErrDisableSharingFor
 // ErrDriverNotFoundForTable 无法找到表(%s)的数据驱动
 const ErrDriverNotFoundForTable = i18n.TrID("v_errors_ErrDriverNotFoundForTable")
 
-// ErrDupplicateColumnID 重复列ID(%s)
-const ErrDupplicateColumnID = i18n.TrID("v_errors_ErrDupplicateColumnID")
+// ErrDuplicateColumnID 重复列ID(%s)
+const ErrDuplicateColumnID = i18n.TrID("v_errors_ErrDuplicateColumnID")
 
-// ErrDupplicateNodeID 重复节点ID(%s)
-const ErrDupplicateNodeID = i18n.TrID("v_errors_ErrDupplicateNodeID")
+// ErrDuplicateNodeID 重复节点ID(%s)
+const ErrDuplicateNodeID = i18n.TrID("v_errors_ErrDuplicateNodeID")
 
 // ErrFailedMapValue 转换数据(%v): dt(%s) => vt(%s) 失败
 const ErrFailedMapValue = i18n.TrID("v_errors_ErrFailedMapValue")

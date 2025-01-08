@@ -2,8 +2,8 @@ package data
 
 import "github.com/XShareGrid/cap/msg/errors"
 
-// ErrDupplicateDriverForTable ...
-var ErrDupplicateDriverForTable = errors.New("dupplicate driver for table(%s)")
+// ErrDuplicateDriverForTable ...
+var ErrDuplicateDriverForTable = errors.New("duplicate driver for table(%s)")
 
 // ErrDriverNotFoundForTable ...
 var ErrDriverNotFoundForTable = errors.New("driver not found for table(%s)")

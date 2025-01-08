@@ -6,7 +6,7 @@ import language "golang.org/x/text/language"
 func init() {
 	initTrRegistry()
 	errors_lr.addTranslation(ErrFailedMapValue, language.Make("zh-CN"), "转换数据(%v): dt(%s) => vt(%s) 失败")
-	errors_lr.addTranslation(ErrDupplicateColumnID, language.Make("zh-CN"), "重复列ID(%s)")
+	errors_lr.addTranslation(ErrDuplicateColumnID, language.Make("zh-CN"), "重复列ID(%s)")
 	errors_lr.addTranslation(ErrResultExceedMaxLimit, language.Make("zh-CN"), "查询结果数量[%d]超出单次最大数量[%d]限制，请分次查询")
 	errors_lr.addTranslation(ErrDriverNotFoundForTable, language.Make("zh-CN"), "无法找到表(%s)的数据驱动")
 	errors_lr.addTranslation(ErrInvalidColumnID, language.Make("zh-CN"), "无效的列ID(%s)")
@@ -19,7 +19,7 @@ func init() {
 	errors_lr.addTranslation(ErrOperatePermissionDenied, language.Make("zh-CN"), "没有权限操作其他人创建的模板")
 	errors_lr.addTranslation(ErrTempTableNotSupportTemplateOp, language.Make("zh-CN"), "临时表单不支持模板操作")
 	errors_lr.addTranslation(ErrNotResultForID, language.Make("zh-CN"), "无法查询到ID(%s)对应的数据")
-	errors_lr.addTranslation(ErrDupplicateNodeID, language.Make("zh-CN"), "重复节点ID(%s)")
+	errors_lr.addTranslation(ErrDuplicateNodeID, language.Make("zh-CN"), "重复节点ID(%s)")
 	errors_lr.addTranslation(ErrAggregateNotSupported, language.Make("zh-CN"), "该列(%s.%s)不支持聚合")
 	errors_lr.addTranslation(ErrDisableSharingFormToAllUsers, language.Make("zh-CN"), "禁止向所有用户共享表单")
 	errors_lr.addTranslation(ErrNodeNotExist, language.Make("zh-CN"), "节点ID(%s)不存在")

@@ -20,7 +20,7 @@ func initTrRegistry() {
 func (l handle_langRegistry) addTranslation(id i18n.TrID, lang language.Tag, translation string) error {
 	if ts, ok := handle_lr[id]; ok {
 		if _, ok := ts[lang]; ok {
-			return fmt.Errorf("dupplicate translation for [%s#%s]", id, lang.String())
+			return fmt.Errorf("duplicate translation for [%s#%s]", id, lang.String())
 		}
 		l[id][lang] = translation
 	} else {

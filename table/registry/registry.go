@@ -61,12 +61,12 @@ func (rc *registryContainer) Register(node registryNode) error {
 	// check
 	rc.reg.Range(func(key, value interface{}) bool {
 		if node.ID() == key.(string) {
-			err = errors.Wrap(ErrDupplicateNodeID).FillDebugArgs(node.ID()).Log()
+			err = errors.Wrap(ErrDuplicateNodeID).FillDebugArgs(node.ID()).Log()
 			return false
 		}
 		for _, uf := range rc.uniqueFields {
 			if matchValue(value, node, uf) {
-				err = errors.Wrap(ErrDupplicateNodeFiled).FillDebugArgs(uf).Log()
+				err = errors.Wrap(ErrDuplicateNodeFiled).FillDebugArgs(uf).Log()
 				return false
 			}
 		}

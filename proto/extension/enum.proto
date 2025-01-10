@@ -5,36 +5,7 @@ option go_package = "github.com/XShareGrid/cap/proto/extension;extension";
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.EnumValueOptions {
-  string form_name = 1500;
-  string order_type = 1501;
-  string delivery_notice_type = 1502;
-  string return_notice_type = 1503;
-  string mp_type = 1504;
-  string issuemtr_notice_type = 1505;
-  string order_type_name = 1506;
-  string delivery_notice_type_name = 1507;
-  string return_notice_type_name = 1508;
-  string mp_type_name = 1509;
-  string issuemtr_notice_type_name = 1510;
-  string result_type = 1511;
-  string operation_type = 1512;
-  string close_status = 1513;
-  string cancel_status = 1514;
-  string close_status_name = 1515;
-  string cancel_status_name = 1516;
-  string section_type_name = 1517;
-  string document_status = 1518;
-  string document_status_name = 1519;
-  string order_transform = 1520;
-  // common_name 用于扩展枚举的通用名
-  string common_name = 1521;
-  string pick_mtrl_type = 1522;
-  string pick_mtrl_type_name = 1523;
-  string order_sub_type = 1524;
-  string out_stock_name = 1525;
-  string return_material_stock_in_name = 1526;
-  string return_stock_name = 1527;
-  string miscellaneous_stock_in_name = 1528;
-  string option_name = 3456;
-  string rfc_value = 3457;
+  // table option name
+  string option_name = 13456;
+  string option_name_i18n_id = 13457;
 }

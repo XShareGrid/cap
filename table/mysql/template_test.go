@@ -38,15 +38,15 @@ func TestTableTemplateMapper_CreateTemplate(t *testing.T) {
 				Name:        id + "_n",
 				TableId:     "111",
 				FAccess:     0,
-				FCreateUser: 1,
+				FCreateUser: "1",
 				FCreateTime: time.Now(),
 				FModTime:    time.Now(),
 				Body:        []byte(`{"a":1}`),
 			},
 			ShareList: []TableTemplateShare{
-				{UserId: 1},
-				{UserId: 2},
-				{UserId: 3},
+				{UserId: "1"},
+				{UserId: "2"},
+				{UserId: "3"},
 			},
 		})
 	}
@@ -106,9 +106,9 @@ func TestTableTemplateMapper_UpdateTableTemplate(t *testing.T) {
 	mapper := NewTableTemplateMapper(ss)
 	err = mapper.UpdateTableTemplate("p7Cj9", "测试", 2, json.RawMessage(`{"test":77777777}`),
 		[]TableTemplateShare{
-			{UserId: 4},
-			{UserId: 5},
-			{UserId: 6},
+			{UserId: "4"},
+			{UserId: "5"},
+			{UserId: "6"},
 		})
 	if err != nil {
 		t.Fatal(err)
@@ -122,7 +122,7 @@ func TestTableTemplateMapper_FindTemplatesByShareUser(t *testing.T) {
 	}
 	defer ss.Close(err)
 	mapper := NewTableTemplateMapper(ss)
-	templates, err := mapper.FindTemplatesByShareUserAndTableID(1, "111")
+	templates, err := mapper.FindTemplatesByShareUserAndTableID("1", "111")
 	if err != nil {
 		t.Fatal(err)
 	}

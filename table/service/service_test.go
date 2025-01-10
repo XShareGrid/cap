@@ -10,10 +10,10 @@ import (
 	"github.com/XShareGrid/cap/table/demo/tables"
 	cap "github.com/XShareGrid/cap/table/proto/go"
 
-  	"github.com/XShareGrid/cap/test"
+	"github.com/XShareGrid/cap/test"
 
-	// "gitlab.pintechs.com/eh/energy-backend/mts2/pkg/tables"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -102,7 +102,7 @@ func TestFixedString(t *testing.T) {
 }
 
 func TestGetTableRows(t *testing.T) {
-	conn, err := grpc.Dial("192.168.34.15:8888", grpc.WithInsecure())
+	conn, err := grpc.NewClient("localhost:8002", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +141,10 @@ func TestGetTableRows(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	for _, r := range rsp.Rows {
+
+	msg, _ := rsp.Data.UnmarshalNew()
+	rspGetTableRows := msg.(*cap.GetTableRowsRsp)
+	for _, r := range rspGetTableRows.Rows {
 		fmt.Printf("|")
 		for _, c := range r.Cells {
 			if s, ok := c.Value.V.(*cap.Value_VString); ok {
@@ -157,7 +160,7 @@ func TestGetTableRows(t *testing.T) {
 		fmt.Printf("\n")
 	}
 	fmt.Printf("第 %d / %d 页，每页 %d 项\n",
-		rsp.PageInfo.GetCurrentPage(), rsp.PageInfo.GetTotalPages(), rsp.PageInfo.GetPageSize())
+		rspGetTableRows.PageInfo.GetCurrentPage(), rspGetTableRows.PageInfo.GetTotalPages(), rspGetTableRows.PageInfo.GetPageSize())
 }
 
 func Test_parseTpl(t *testing.T) {

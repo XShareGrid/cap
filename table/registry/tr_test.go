@@ -2,7 +2,6 @@ package registry
 
 import (
 	"fmt"
-	// "gitlab.pintechs.com/eh/energy-backend/wms/dict"
 	"os"
 	"testing"
 

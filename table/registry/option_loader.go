@@ -9,8 +9,8 @@ import (
 
 	"github.com/XShareGrid/cap/proto/extension"
 	cap "github.com/XShareGrid/cap/table/proto/go"
-	"github.com/golang/protobuf/proto"
 	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"google.golang.org/protobuf/proto"
 )
 
 // EnumOption 枚举选项
@@ -61,24 +61,10 @@ func LoadOptionFromProtoEnum(en PBEnum) (*EnumOption, error) {
 			for _, o := range ed.Value {
 				var optName string
 
-				ext, err := proto.GetExtension(o.Options, extension.E_OptionName)
-				if err == nil && ext.(*string) != nil {
-					optName = *(ext.(*string))
-				} //else {
-				// //如果上面扩展名没有找到，继续第二个扩展名
-				// ext, err := proto.GetExtension(o.Options, dict.E_OperationTypeName)
-				// if err == nil && ext.(*string) != nil {
-				// 	optName = *(ext.(*string))
-				// } else {
-				// 	//如果上面扩展名没有找到，继续第三个扩展名
-				// 	ext, err := proto.GetExtension(o.Options, dict.E_BillStatusName)
-				// 	if err == nil && ext.(*string) != nil {
-				// 		optName = *(ext.(*string))
-				// 	} else {
-				// 		optName = *o.Name
-				// 	}
-				// }
-				//}
+				ext := proto.GetExtension(o.Options, extension.E_OptionName)
+				if err == nil {
+					optName = ext.(string)
+				}
 				ov := &cap.OptionValue{Id: *o.Number, Name: optName}
 				if optName == "-" {
 					continue

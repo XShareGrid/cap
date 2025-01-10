@@ -2,10 +2,11 @@ package msg
 
 import (
 	"fmt"
-	"gitlab.pintechs.com/eh/energy-backend/cap/msg/i18n"
-	"golang.org/x/text/language"
 	"testing"
 	"time"
+
+	"github.com/XShareGrid/cap/msg/i18n"
+	"golang.org/x/text/language"
 )
 
 type TestTranslator struct {

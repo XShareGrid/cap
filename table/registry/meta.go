@@ -500,7 +500,7 @@ const EmptyTemplateID = "TPL_EMPTY"
 const EmptyTemplateName = "空模板"
 
 var defaultTemplateUser = &cap.UserInfo{
-	Id:          -1,
+	Id:          "-1",
 	UserName:    "system",
 	DisplayName: "系统",
 }

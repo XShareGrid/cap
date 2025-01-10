@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"gitlab.pintechs.com/eh/energy-backend/cap/test"
+	"github.com/XShareGrid/cap/test"
 )
 
 // Position 工位

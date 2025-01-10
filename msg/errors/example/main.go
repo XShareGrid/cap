@@ -1,13 +1,13 @@
 package main
 
-// import "gitlab.pintechs.com/eh/energy-backend/cap/msg/errors/example/ue"
+// import "github.com/XShareGrid/cap/msg/errors/example/ue"
 
 import (
 	"fmt"
 
-	"gitlab.pintechs.com/eh/energy-backend/cap/logger"
-	"gitlab.pintechs.com/eh/energy-backend/cap/msg/errors"
-	"gitlab.pintechs.com/eh/energy-backend/cap/msg/errors/example/ue"
+	"github.com/XShareGrid/cap/logger"
+	"github.com/XShareGrid/cap/msg/errors"
+	"github.com/XShareGrid/cap/msg/errors/example/ue"
 )
 
 func main() {

@@ -8,8 +8,9 @@ import (
 
 	"golang.org/x/text/language"
 	"google.golang.org/grpc/codes"
-
-	excelize "github.com/xuri/excelize/v2"
+	"google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/XShareGrid/cap/database/mysql"
 	"github.com/XShareGrid/cap/i18n"
@@ -21,12 +22,14 @@ import (
 	"github.com/XShareGrid/cap/table/registry"
 	"github.com/XShareGrid/cap/table/template"
 	"github.com/ahmetb/go-linq"
+
+	excelize "github.com/xuri/excelize/v2"
 )
 
 // UserInfoProvider 账户信息提供者
 type UserInfoProvider interface {
 	GetCurrentUser(ctx context.Context) (*cap.UserInfo, error)
-	GetUserInfoByID(id int32) (*cap.UserInfo, error)
+	GetUserInfoByID(id string) (*cap.UserInfo, error)
 }
 
 // TableWService ...
@@ -52,23 +55,46 @@ func (tws *TableWService) DBWrite() *mysql.DB {
 
 var langCode = language.Make("zh-CN")
 
+func rspOK(data proto.Message) *cap.CommonRsp {
+	any, _ := anypb.New(data)
+	return &cap.CommonRsp{
+		Result:  0,
+		Message: "ok",
+		Data:    any,
+	}
+}
+
+func rspErr(ctx context.Context, err error) (*cap.CommonRsp, error) {
+	langCode = i18n.GetLanguageTypeByMeta(ctx)
+	gErr := handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+	errMsg := gErr.Error()
+	if s, ok := status.FromError(gErr); ok {
+		errMsg = fmt.Sprintf("%s: %s", s.Code().String(), s.Message())
+	}
+	return &cap.CommonRsp{
+		Result:  1,
+		Message: errMsg,
+		Data:    nil,
+	}, nil
+}
+
 /*************************************** 表 *******************************************/
 
 // GetTableInfo 获取表信息
-func (t *TableWService) GetTableInfo(ctx context.Context, req *cap.GetTableInfoReq) (*cap.GetTableInfoRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
+func (t *TableWService) GetTableInfo(ctx context.Context, req *cap.GetTableInfoReq) (*cap.CommonRsp, error) {
+
 	rsp := &cap.GetTableInfoRsp{}
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 
 	rsp.Id = tmd.ID()
 	rsp.Name = i18n.GetTranslation(userLanguage, registry.TrKeyTableName(tmd.ID()))
 	rsp.Desc = i18n.GetTranslation(userLanguage, registry.TrKeyTableDesc(tmd.ID()))
 	rsp.ExportFilePrefix = rsp.Name + "_" + time.Now().Format("20060102")
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // // 临时表格判断，query: tempTable=1
@@ -87,41 +113,41 @@ func isTempTable(ctx context.Context) bool {
 /*************************************** 模板 *******************************************/
 
 // GetTableTemplates 获取表模板信息
-func (t *TableWService) GetTableTemplates(ctx context.Context, req *cap.GetTableTemplatesReq) (*cap.GetTableTemplatesRsp, error) {
+func (t *TableWService) GetTableTemplates(ctx context.Context, req *cap.GetTableTemplatesReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableTemplatesRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
 	}()
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	tplList := []*cap.Template{tmd.DefaultTpl(ctx)}
 	// TODO. 20250108
 	if isTempTable(ctx) {
 		rsp.Templates = tplList
-		return rsp, nil
+		return rspOK(rsp), nil
 	}
 	user, err := t.userInfoProvider.GetCurrentUser(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	tplListOwn, err := template.GlobalManager().FindTemplatesByTableAndCreateUser(ctx, ss, req.TableId, int(user.Id))
+	tplListOwn, err := template.GlobalManager().FindTemplatesByTableAndCreateUser(ctx, ss, req.TableId, user.Id)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	tplListShared, err := template.GlobalManager().FindTemplatesByTableAndShareUser(ctx, ss, req.TableId, int(user.Id))
+	tplListShared, err := template.GlobalManager().FindTemplatesByTableAndShareUser(ctx, ss, req.TableId, user.Id)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	tplListPublic, err := template.GlobalManager().FindPublicTemplatesByTable(ctx, ss, req.TableId, int(user.Id))
+	tplListPublic, err := template.GlobalManager().FindPublicTemplatesByTable(ctx, ss, req.TableId, user.Id)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 
 	tplList = append(tplList, tplListOwn...)
@@ -136,47 +162,46 @@ func (t *TableWService) GetTableTemplates(ctx context.Context, req *cap.GetTable
 		return tpl.Id
 	}).ToSlice(&tplList)
 	rsp.Templates = tplList
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // CreateTableTemplate 创建模板
-func (t *TableWService) CreateTableTemplate(ctx context.Context, req *cap.CreateTableTemplateReq) (*cap.CreateTableTemplateRsp, error) {
+func (t *TableWService) CreateTableTemplate(ctx context.Context, req *cap.CreateTableTemplateReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	rsp := &cap.CreateTableTemplateRsp{}
 	if isTempTable(ctx) {
-		return rsp, handle.Handle(ctx, ErrTempTableNotSupportTemplateOp).GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, ErrTempTableNotSupportTemplateOp)
 	}
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.Template.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	err = tmd.ValidateTpl(req.Template, userLanguage)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	ss, err := t.DBWrite().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
 	}()
 	user, err := t.userInfoProvider.GetCurrentUser(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 
 	id, err := template.GlobalManager().CreateTemplate(ctx, ss, req.Template.TableId,
 		req.Template.Name, req.Template.Body, req.Template.FileInfo.Access,
-		req.GetTemplate().FileInfo.ShareList, int(user.Id))
+		req.GetTemplate().FileInfo.ShareList, user.Id)
 	if err != nil {
 		err = errors.New("Duplicate plan name creation")
 		if langCode.String() == "zh-CN" {
 			err = errors.New("方案名称创建重复")
 		}
-		return rsp, err
-		//return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 
 	created, err := template.GlobalManager().FindTemplate(ctx, ss, id)
@@ -184,161 +209,161 @@ func (t *TableWService) CreateTableTemplate(ctx context.Context, req *cap.Create
 		rsp.Template = created
 	}
 
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // DeleteTableTemplate 删除模板
-func (t *TableWService) DeleteTableTemplate(ctx context.Context, req *cap.DeleteTableTemplateReq) (*cap.DeleteTableTemplateRsp, error) {
+func (t *TableWService) DeleteTableTemplate(ctx context.Context, req *cap.DeleteTableTemplateReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.DeleteTableTemplateRsp{}
 	ss, err := t.DBWrite().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
 	}()
 	if isTempTable(ctx) {
-		return rsp, handle.Handle(ctx, ErrTempTableNotSupportTemplateOp).GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, ErrTempTableNotSupportTemplateOp)
 	}
 	user, err := t.userInfoProvider.GetCurrentUser(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	err = template.GlobalManager().DeleteTemplate(ctx, ss, req.TemplateId, int(user.Id))
+	err = template.GlobalManager().DeleteTemplate(ctx, ss, req.TemplateId, user.Id)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // UpdateTableTemplate 更新模板
-func (t *TableWService) UpdateTableTemplate(ctx context.Context, req *cap.CreateTableTemplateReq) (*cap.CreateTableTemplateRsp, error) {
+func (t *TableWService) UpdateTableTemplate(ctx context.Context, req *cap.CreateTableTemplateReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	rsp := &cap.CreateTableTemplateRsp{}
 	if isTempTable(ctx) {
-		return rsp, handle.Handle(ctx, ErrTempTableNotSupportTemplateOp).GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, ErrTempTableNotSupportTemplateOp)
 	}
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.Template.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	err = tmd.ValidateTpl(req.Template, userLanguage)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	ss, err := t.DBWrite().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
 	}()
 	user, err := t.userInfoProvider.GetCurrentUser(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	rsp.Template, err = template.GlobalManager().UpdateTemplate(ctx, ss, req.Template, int(user.Id))
+	rsp.Template, err = template.GlobalManager().UpdateTemplate(ctx, ss, req.Template, user.Id)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 /*************************************** 数据 *******************************************/
 
 // GetTableColumns 获取表列
-func (t *TableWService) GetTableColumns(ctx context.Context, req *cap.GetTableColumnsReq) (rsp *cap.GetTableColumnsRsp, err error) {
+func (t *TableWService) GetTableColumns(ctx context.Context, req *cap.GetTableColumnsReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
-	rsp = &cap.GetTableColumnsRsp{}
+	rsp := &cap.GetTableColumnsRsp{}
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	cols := tmd.ColumnsWithoutInternal()
 	rsp.Columns = make([]*cap.TableColumn, len(cols.List()))
 	for i, c := range cols.List() {
 		rsp.Columns[i] = c.BuildTableColumn(userLanguage, req.TableId)
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // GetTableRows 获取表行
-func (t *TableWService) GetTableRows(ctx context.Context, req *cap.GetTableRowsReq) (*cap.GetTableRowsRsp, error) {
+func (t *TableWService) GetTableRows(ctx context.Context, req *cap.GetTableRowsReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableRowsRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
 	}()
 	tpl, err := data.ParseTpl(ctx, ss, req.TableId, req.Tpl)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	rsp, err = data.GlobalManager().FindRows(ctx, ss, tpl, req.Page, req.Order)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // GetTableRowsLite 简单版获取行列表接口
-func (t *TableWService) GetTableRowsLite(ctx context.Context, req *cap.GetTableRowsLiteReq) (*cap.GetTableRowsLiteRsp, error) {
+func (t *TableWService) GetTableRowsLite(ctx context.Context, req *cap.GetTableRowsLiteReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableRowsLiteRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
 	}()
 	rsp, err = data.GlobalManager().FindRowsLite(ctx, ss, req.TableId, req.Query)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // GetTableRowByID 精确获取一行
-func (t *TableWService) GetTableRowByID(ctx context.Context, req *cap.GetTableRowByIDReq) (*cap.GetTableRowByIDRsp, error) {
+func (t *TableWService) GetTableRowByID(ctx context.Context, req *cap.GetTableRowByIDReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableRowByIDRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
 	}()
 	tpl, err := data.ParseTpl(ctx, ss, req.TableId, req.Tpl)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	rsp, err = data.GlobalManager().FindRow(ctx, ss, tpl, req.RowId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // DoExportTable 导出表
-func (t *TableWService) DoExportTable(ctx context.Context, req *cap.GetTableRowsReq) (*cap.ExportTableRsp, error) {
+func (t *TableWService) DoExportTable(ctx context.Context, req *cap.GetTableRowsReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.ExportTableRsp{}
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
@@ -351,23 +376,23 @@ func (t *TableWService) DoExportTable(ctx context.Context, req *cap.GetTableRows
 	f.DeleteSheet("Sheet1")
 	sw, err := f.NewStreamWriter(fileName)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	// 写表头
 	// 解析模板
 	tpl, err := data.ParseTpl(ctx, ss, req.TableId, req.Tpl)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	err = tmd.ValidateTpl(tpl, userLanguage)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	headers := make([]interface{}, len(tpl.Body.Output.VisibleColumns))
 	for i, col := range tpl.Body.Output.VisibleColumns {
 		_, err := tmd.Columns().Find(col.ColumnId)
 		if err != nil {
-			return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+			return rspErr(ctx, err)
 		}
 		headers[i] = i18n.GetTranslation(userLanguage, registry.TrKeyTableField(tmd.ID(), col.ColumnId), tmd.Name())
 	}
@@ -377,7 +402,7 @@ func (t *TableWService) DoExportTable(ctx context.Context, req *cap.GetTableRows
 
 	rowsRsp, err := data.GlobalManager().FindRows(ctx, ss, tpl, req.Page, req.Order)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	for i, rowRsp := range rowsRsp.Rows {
 		row := make([]interface{}, len(rowRsp.Cells))
@@ -412,27 +437,27 @@ func (t *TableWService) DoExportTable(ctx context.Context, req *cap.GetTableRows
 	sw.Flush()
 	buf, err := f.WriteToBuffer()
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	rsp.ExcelData = buf.Bytes()
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // GetTableColumnOptions 获取列选项列表（仅ValueType = VT_OPTION时可获取）
-func (t *TableWService) GetTableColumnOptions(ctx context.Context, req *cap.GetTableColumnOptionsReq) (*cap.GetTableColumnOptionsRsp, error) {
+func (t *TableWService) GetTableColumnOptions(ctx context.Context, req *cap.GetTableColumnOptionsReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableColumnOptionsRsp{}
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	desc, err := tmd.Columns().Find(req.ColumnId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	opts, err := registry.GlobalTableRegistry().OptionReg.GetOptionsWithI18nCtx(ctx, desc.DataType.String())
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	rsp.OptionTypeID = desc.DataType.String()
 	rsp.Options = make([]*cap.OptionValue, len(opts))
@@ -442,17 +467,17 @@ func (t *TableWService) GetTableColumnOptions(ctx context.Context, req *cap.GetT
 			Name: opt.Name,
 		}
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // GetOptions 根据Option ID获取
-func (t *TableWService) GetOptions(ctx context.Context, req *cap.GetOptionsReq) (*cap.GetTableColumnOptionsRsp, error) {
+func (t *TableWService) GetOptions(ctx context.Context, req *cap.GetOptionsReq) (*cap.CommonRsp, error) {
 	//langCode = i18n.GetLanguageTypeByMeta(ctx)
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	rsp := &cap.GetTableColumnOptionsRsp{}
 	opts, err := registry.GlobalTableRegistry().OptionReg.GetOptionsWithI18nCtx(ctx, req.OptionTypeID)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	rsp.OptionTypeID = req.OptionTypeID
 	rsp.Options = make([]*cap.OptionValue, len(opts))
@@ -464,18 +489,18 @@ func (t *TableWService) GetOptions(ctx context.Context, req *cap.GetOptionsReq) 
 			Name: name,
 		}
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 /*************************************** 操作 *******************************************/
 
 // DoRowFormAction ...
-func (t *TableWService) DoRowFormAction(ctx context.Context, req *cap.DoRowFormActionReq) (rsp *cap.DoRowFormActionRsp, err error) {
+func (t *TableWService) DoRowFormAction(ctx context.Context, req *cap.DoRowFormActionReq) (*cap.CommonRsp, error) {
 	langCode = i18n.GetLanguageTypeByMeta(ctx)
-	rsp = &cap.DoRowFormActionRsp{}
+	rsp := &cap.DoRowFormActionRsp{}
 	ss, err := t.DBWrite().NewSessionWithCtx(ctx)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	defer func() {
 		ss.Close(err)
@@ -483,27 +508,27 @@ func (t *TableWService) DoRowFormAction(ctx context.Context, req *cap.DoRowFormA
 	var tmd registry.TableMetaData
 	tmd, err = registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	var rowAction action.RowAction
 	rowAction, err = tmd.GetRowActions(ctx, nil).Find(req.ActionId)
 	if err != nil {
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
 	if rowAction.Type() != cap.RowActionType_RAT_JSON_FORM {
-		return rsp, handle.Handle(ctx, ErrNotFormAction).GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, ErrNotFormAction)
 	}
 	err = rowAction.(*action.FormRowAction).Execute(ctx, ss, req.FormJson)
 	if err != nil {
 		errors.Wrap(err).PrintStackTrace()
-		return rsp, handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
+		return rspErr(ctx, err)
 	}
-	return rsp, nil
+	return rspOK(rsp), nil
 }
 
 // NewTableWService creates table service
 func NewTableWService(dbWrite *mysql.DB, dbRead *mysql.DB, userInfoProvider UserInfoProvider) *TableWService {
-	template.AIP = func(accountID int32) (userName string, displayName string, err error) {
+	template.AIP = func(accountID string) (userName string, displayName string, err error) {
 		info, err := userInfoProvider.GetUserInfoByID(accountID)
 		if err != nil {
 			return "", "", err

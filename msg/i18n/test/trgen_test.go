@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"gitlab.pintechs.com/eh/energy-backend/cap/msg/i18n"
+	"github.com/XShareGrid/cap/msg/i18n"
 )
 
 func TestGenerateTranslatorCode(t *testing.T) {

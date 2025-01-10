@@ -10,7 +10,7 @@ type TableTemplate struct {
 	Name        string    `db:"name"`
 	TableId     string    `db:"table_id"`
 	FAccess     int64     `db:"f_access"`
-	FCreateUser int64     `db:"f_create_user"`
+	FCreateUser string    `db:"f_create_user"`
 	FCreateTime time.Time `db:"f_create_time"`
 	FModTime    time.Time `db:"f_mod_time"`
 	Body        []byte    `db:"body"`
@@ -22,7 +22,7 @@ func (TableTemplate) TableName() string {
 
 type TableTemplateShare struct {
 	TemplateId string `db:"template_id"`
-	UserId     int64  `db:"user_id"`
+	UserId     string `db:"user_id"`
 }
 
 func (TableTemplateShare) TableName() string {

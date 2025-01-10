@@ -3,6 +3,16 @@ syntax = "proto3";
 package cap;
 option go_package = "github.com/XShareGrid/cap/table/proto/go;cap";
 
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+
+message CommonRsp {
+    int32 result = 1;
+    string message = 2;
+    google.protobuf.Any data = 3;
+}
+
+
 // 所有名字按Linux文件名限制
 // ^[^+-./\t\b@#$%*()\[\]][^/\t\b@#$%*()\[\]]{1,254}$
 
@@ -22,7 +32,7 @@ enum ValueType {
   VT_DOUBLE = 2;
   // 日期
   VT_DATE = 3;
-  // 时间
+// 时间
   VT_TIME = 4;
   // 布尔
   VT_BOOLEAN = 5;
@@ -39,7 +49,7 @@ message OptionValue {
 enum HrefStyle {
   HSNone = 0;
   HSNewTab = 1;
-  HSDialog = 2;
+  HSDialog = 2;  
   HSEdit = 3;
   HSCustom = 4;
 }
@@ -76,7 +86,7 @@ message GetTableInfoReq {
 
 // GetTableInfoRsp 获取表回复
 message GetTableInfoRsp {
-  // 表id
+    // 表id
   string id = 1;
   // 表名字 用户可读
   string name = 2;
@@ -192,11 +202,13 @@ message GetTableRowsReq {
   PageParam page = 3;
   // 模板
   TemplateQuery tpl = 4;
+  // 行
+  repeated string row_id_list = 5;
 }
 
 // GetTableRowsRsp 获取表格行回复
 message GetTableRowsRsp {
-  // 行列表
+    // 行列表
   repeated TableRow rows = 1;
   // 分页信息
   PageInfo page_info = 2;
@@ -216,7 +228,7 @@ message GetTableRowByIDReq {
 
 // GetTableRowByIDRsp 根据ID获取行结果
 message GetTableRowByIDRsp {
-  // 表行
+    // 表行
   TableRow row = 1;
 }
 
@@ -271,7 +283,7 @@ message TableColumn {
   bool internal = 11;
   // 是否必须
   bool required = 12;
-  // 宽度比例 EH-148
+  // 宽度比例
   double display_width_rate = 13;
 }
 
@@ -296,7 +308,7 @@ message GetTableColumnsReq {
 
 // GetTableColumnsRsp 获取列回复
 message GetTableColumnsRsp {
-  // 列 列表
+     // 列 列表
   repeated TableColumn columns = 1;
 }
 
@@ -335,7 +347,7 @@ message AggregateResult {
 // 用户信息
 message UserInfo {
   // id
-  int32 id = 1;
+  string id = 1;
   // 用户名 read-only
   string user_name = 2;
   // 姓名 read-only
@@ -365,7 +377,7 @@ message FileInfo {
   // 权限
   FileAccessType access = 1;
   // 共享账号列表，仅access = SHARED
-  repeated int32 share_list = 2;
+  repeated string share_list = 2;
   // 创建用户 无需前端填写
   UserInfo create_user = 3;
   // 创建时间 无需前端填写
@@ -405,8 +417,7 @@ message GetTableTemplatesReq {
 
 // GetTableTemplatesRsp 获取模板列表回复
 message GetTableTemplatesRsp {
-  // 模板列表
-  repeated Template templates = 1;
+    repeated Template templates = 1;
 }
 
 // CreateTableTemplateReq 创建模板请求
@@ -417,7 +428,7 @@ message CreateTableTemplateReq {
 
 // CreateTableTemplateRsp 创建模板回复
 message CreateTableTemplateRsp {
-  // 模板 带id
+    // 模板 带id
   Template template = 1;
 }
 
@@ -486,7 +497,7 @@ message GetTableColumnOptionsReq {
 
 // GetTableColumnOptionsReq 获取列选项请求
 message GetTableColumnOptionsRsp {
-  // 选项列表
+    // 选项列表
   repeated OptionValue options = 1;
   // 唯一标记选项类型的ID
   string OptionTypeID = 2;
@@ -502,12 +513,18 @@ message GetTableRowsLiteReq {
   string table_id = 1;
   // 请求 column_id=?  xxx=?&yyy=?
   string query = 2;
+  // 页码
+  int32 page = 3;
+  // 每页数量
+  int32 pageSize = 4;
 }
 
 // GetTableRowsLiteRsp 获取行列表
 message GetTableRowsLiteRsp {
-  // 行列表json数组
+   // 行列表json数组
   repeated string rows = 1;
+  // 总记录数量
+  int32 total_results = 2;
 }
 
 // TableWService 表格服务
@@ -521,39 +538,110 @@ message GetTableRowsLiteRsp {
 service TableWService {
   // 表
   // GetTableInfo 获取表信息
-  rpc GetTableInfo(GetTableInfoReq) returns (GetTableInfoRsp) {};
+  rpc GetTableInfo(GetTableInfoReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetTableInfo"
+      body : "*"
+    };
+  }
 
   // 模板
   // GetTableTemplates 获取表模板信息
-  rpc GetTableTemplates(GetTableTemplatesReq) returns (GetTableTemplatesRsp) {};
+  rpc GetTableTemplates(GetTableTemplatesReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetTableTemplates"
+      body : "*"
+    };
+  };
+
   // CreateTableTemplate 创建模板
   rpc CreateTableTemplate(CreateTableTemplateReq)
-      returns (CreateTableTemplateRsp) {};
+      returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/CreateTableTemplate"
+      body : "*"
+    };
+  };
+
   // DeleteTableTemplate 删除模板
   rpc DeleteTableTemplate(DeleteTableTemplateReq)
-      returns (DeleteTableTemplateRsp) {};
+      returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/DeleteTableTemplate"
+      body : "*"
+    };
+  };
+
   // UpdateTableTemplate 更新模板
   rpc UpdateTableTemplate(CreateTableTemplateReq)
-      returns (CreateTableTemplateRsp) {};
+      returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/UpdateTableTemplate"
+      body : "*"
+    };
+  };
 
   // 数据
   // GetTableColumns 获取表列
-  rpc GetTableColumns(GetTableColumnsReq) returns (GetTableColumnsRsp) {};
+  rpc GetTableColumns(GetTableColumnsReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetTableColumns"
+      body : "*"
+    };
+  };
+
   // GetTableRows 获取表行
-  rpc GetTableRows(GetTableRowsReq) returns (GetTableRowsRsp) {};
+  rpc GetTableRows(GetTableRowsReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetTableRows"
+      body : "*"
+    };
+  };
   // GetTableRowByID 精确获取一行
-  rpc GetTableRowByID(GetTableRowByIDReq) returns (GetTableRowByIDRsp) {};
+  rpc GetTableRowByID(GetTableRowByIDReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetTableRowByID"
+      body : "*"
+    };
+  };
   // DoExportTable 导出表
-  rpc DoExportTable(GetTableRowsReq) returns (ExportTableRsp) {};
+  rpc DoExportTable(GetTableRowsReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/DoExportTable"
+      body : "*"
+    };
+  };
+
   // GetTableColumnOptions 获取列选项列表（仅ValueType = VT_OPTION时可获取）
   rpc GetTableColumnOptions(GetTableColumnOptionsReq)
-      returns (GetTableColumnOptionsRsp) {};
+      returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetTableColumnOptions"
+      body : "*"
+    };
+  };
+
   // GetTableRowsLite 简单版获取行列表接口
-  rpc GetTableRowsLite(GetTableRowsLiteReq) returns (GetTableRowsLiteRsp) {};
+  rpc GetTableRowsLite(GetTableRowsLiteReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetTableRowsLite"
+      body : "*"
+    };
+  };
 
   // GetOptions 根据Option ID获取
-  rpc GetOptions(GetOptionsReq) returns (GetTableColumnOptionsRsp) {};
+  rpc GetOptions(GetOptionsReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/GetOptions"
+      body : "*"
+    };
+  };
 
   // 执行表单操作
-  rpc DoRowFormAction(DoRowFormActionReq) returns (DoRowFormActionRsp) {};
+  rpc DoRowFormAction(DoRowFormActionReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/DoRowFormAction"
+      body : "*"
+    };
+  };
 }

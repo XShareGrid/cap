@@ -3,7 +3,7 @@ package test
 
 import (
 	"fmt"
-	i18n "gitlab.pintechs.com/eh/energy-backend/cap/msg/i18n"
+	i18n "github.com/XShareGrid/cap/msg/i18n"
 	language "golang.org/x/text/language"
 )
 

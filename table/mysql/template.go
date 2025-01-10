@@ -91,7 +91,7 @@ func FilterTemplateIDEquals(tplID string) *db.RowsFilter {
 }
 
 // FilterCreateUserEquals 按创建用户过滤
-func FilterCreateUserEquals(userID int64) *db.RowsFilter {
+func FilterCreateUserEquals(userID string) *db.RowsFilter {
 	return &db.RowsFilter{Key: "f_create_user", Operator: db.RFEqual, Value: userID}
 }
 
@@ -144,7 +144,7 @@ func (m *TableTemplateMapper) FindTemplates(filters ...*db.RowsFilter) ([]*Table
 }
 
 // FindTemplatesByShareUserAndTableID ...
-func (m *TableTemplateMapper) FindTemplatesByShareUserAndTableID(userID int64, tableID string) ([]*TableTpl, error) {
+func (m *TableTemplateMapper) FindTemplatesByShareUserAndTableID(userID string, tableID string) ([]*TableTpl, error) {
 	templateIDList := []string{}
 	sqlSelect := `SELECT template_id FROM table_template_share WHERE user_id = ?`
 	err := m.GetTx().Select(&templateIDList, sqlSelect, userID)

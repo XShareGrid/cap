@@ -13,14 +13,14 @@ import (
 	"github.com/XShareGrid/cap/table/mysql"
 	cap "github.com/XShareGrid/cap/table/proto/go"
 	"github.com/XShareGrid/cap/table/registry"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
-// AccoutInfoProvider ...
-type AccoutInfoProvider func(accountID int32) (userName string, displayName string, err error)
+// AccountInfoProvider ...
+type AccountInfoProvider func(accountID string) (userName string, displayName string, err error)
 
 // AIP ...
-var AIP AccoutInfoProvider
+var AIP AccountInfoProvider
 
 // Manager ...
 type Manager struct {
@@ -33,7 +33,7 @@ func (tm *Manager) genTemplateID() (string, error) {
 
 // CreateTemplate ...
 func (tm *Manager) CreateTemplate(ctx context.Context, ss *db.Session, tableID string, name string, body *cap.TemplateBody, accessType cap.FileAccessType,
-	shareList []int32, createUser int) (tplID string, err error) {
+	shareList []string, createUser string) (tplID string, err error) {
 	mapper := mysql.NewTableTemplateMapper(ss)
 	id, err := tm.genTemplateID()
 	if err != nil {
@@ -49,7 +49,7 @@ func (tm *Manager) CreateTemplate(ctx context.Context, ss *db.Session, tableID s
 			Name:        name,
 			TableId:     tableID,
 			FAccess:     int64(accessType),
-			FCreateUser: int64(createUser),
+			FCreateUser: createUser,
 			FCreateTime: time.Now(),
 			FModTime:    time.Now(),
 			Body:        templateBody,
@@ -57,7 +57,7 @@ func (tm *Manager) CreateTemplate(ctx context.Context, ss *db.Session, tableID s
 	}
 	if accessType == cap.FileAccessType_TA_SHARED {
 		for _, s := range shareList {
-			tpl.ShareList = append(tpl.ShareList, mysql.TableTemplateShare{UserId: int64(s)})
+			tpl.ShareList = append(tpl.ShareList, mysql.TableTemplateShare{UserId: s})
 		}
 	}
 	err = mapper.CreateTemplate(tpl)
@@ -68,14 +68,14 @@ func (tm *Manager) CreateTemplate(ctx context.Context, ss *db.Session, tableID s
 }
 
 // DeleteTemplate ...
-func (tm *Manager) DeleteTemplate(ctx context.Context, ss *db.Session, id string, userID int) error {
+func (tm *Manager) DeleteTemplate(ctx context.Context, ss *db.Session, id string, userID string) error {
 	mapper := mysql.NewTableTemplateMapper(ss)
 	tpl, err := mapper.FindTemplate(id, true)
 	if err != nil {
 		return errors.Wrap(err).Log()
 	}
 	// TODO. 其他高级权限校验？
-	if int(tpl.FCreateUser) != userID {
+	if tpl.FCreateUser != userID {
 		return errors.Wrap(ErrOperatePermissionDenied).Log()
 	}
 	_, err = mapper.DeleteTemplates(mysql.FilterTemplateIDEquals(id))
@@ -86,9 +86,9 @@ func (tm *Manager) DeleteTemplate(ctx context.Context, ss *db.Session, id string
 }
 
 // DeleteTemplateByCreateUser ...
-func (tm *Manager) DeleteTemplateByCreateUser(ctx context.Context, ss *db.Session, currentUserID int) error {
+func (tm *Manager) DeleteTemplateByCreateUser(ctx context.Context, ss *db.Session, currentUserID string) error {
 	mapper := mysql.NewTableTemplateMapper(ss)
-	_, err := mapper.DeleteTemplates(mysql.FilterCreateUserEquals(int64(currentUserID)))
+	_, err := mapper.DeleteTemplates(mysql.FilterCreateUserEquals(currentUserID))
 	if err != nil {
 		return errors.Wrap(err).Log()
 	}
@@ -96,13 +96,13 @@ func (tm *Manager) DeleteTemplateByCreateUser(ctx context.Context, ss *db.Sessio
 }
 
 // UpdateTemplate ...
-func (tm *Manager) UpdateTemplate(ctx context.Context, ss *db.Session, tpl *cap.Template, currentUserID int) (*cap.Template, error) {
+func (tm *Manager) UpdateTemplate(ctx context.Context, ss *db.Session, tpl *cap.Template, currentUserID string) (*cap.Template, error) {
 	mapper := mysql.NewTableTemplateMapper(ss)
 	oldTpl, err := mapper.FindTemplate(tpl.Id, true)
 	if err != nil {
 		return nil, errors.Wrap(err).Log()
 	}
-	if oldTpl.FCreateUser != int64(currentUserID) {
+	if oldTpl.FCreateUser != currentUserID {
 		return nil, errors.Wrap(ErrOperatePermissionDenied).Log()
 	}
 	var shareList = []mysql.TableTemplateShare{}
@@ -112,7 +112,7 @@ func (tm *Manager) UpdateTemplate(ctx context.Context, ss *db.Session, tpl *cap.
 	}
 	if tpl.FileInfo.Access == cap.FileAccessType_TA_SHARED {
 		for _, s := range tpl.FileInfo.ShareList {
-			shareList = append(shareList, mysql.TableTemplateShare{UserId: int64(s)})
+			shareList = append(shareList, mysql.TableTemplateShare{UserId: s})
 		}
 	} else if tpl.FileInfo.Access == cap.FileAccessType_TA_PUBLIC {
 		// XSG-3148
@@ -134,7 +134,7 @@ func mapTpl(ctx context.Context, src *mysql.TableTpl) (dst *cap.Template) {
 			Access: cap.FileAccessType(src.FAccess),
 			// TODO map account info
 			CreateUser: &cap.UserInfo{
-				Id: int32(src.FCreateUser),
+				Id: src.FCreateUser,
 			},
 			CreateTime: src.FCreateTime.Format(time.RFC3339),
 			ModifyTime: src.FModTime.Format(time.RFC3339),
@@ -142,13 +142,13 @@ func mapTpl(ctx context.Context, src *mysql.TableTpl) (dst *cap.Template) {
 		Body: &cap.TemplateBody{},
 	}
 	if AIP != nil {
-		userName, displayName, _ := AIP(int32(src.FCreateUser))
+		userName, displayName, _ := AIP(src.FCreateUser)
 		dst.FileInfo.CreateUser.UserName = userName
 		dst.FileInfo.CreateUser.DisplayName = displayName
 	}
 	if dst.FileInfo.Access == cap.FileAccessType_TA_SHARED {
 		for _, s := range src.ShareList {
-			dst.FileInfo.ShareList = append(dst.FileInfo.ShareList, int32(s.UserId))
+			dst.FileInfo.ShareList = append(dst.FileInfo.ShareList, s.UserId)
 		}
 	}
 	err := proto.Unmarshal(src.Body, dst.Body)
@@ -211,9 +211,9 @@ func (tm *Manager) FindTemplate(ctx context.Context, ss *db.Session, id string) 
 }
 
 // FindTemplatesByTableAndCreateUser ...
-func (tm *Manager) FindTemplatesByTableAndCreateUser(ctx context.Context, ss *db.Session, tableID string, createUser int) ([]*cap.Template, error) {
+func (tm *Manager) FindTemplatesByTableAndCreateUser(ctx context.Context, ss *db.Session, tableID string, createUser string) ([]*cap.Template, error) {
 	mapper := mysql.NewTableTemplateMapper(ss)
-	dbTplList, err := mapper.FindTemplates(mysql.FilterTableIDEquals(tableID), mysql.FilterCreateUserEquals(int64(createUser)))
+	dbTplList, err := mapper.FindTemplates(mysql.FilterTableIDEquals(tableID), mysql.FilterCreateUserEquals(createUser))
 	if err != nil {
 		return nil, errors.Wrap(err).Log()
 	}
@@ -225,15 +225,15 @@ func (tm *Manager) FindTemplatesByTableAndCreateUser(ctx context.Context, ss *db
 }
 
 // FindTemplatesByTableAndShareUser ...
-func (tm *Manager) FindTemplatesByTableAndShareUser(ctx context.Context, ss *db.Session, tableID string, shareUser int) ([]*cap.Template, error) {
+func (tm *Manager) FindTemplatesByTableAndShareUser(ctx context.Context, ss *db.Session, tableID string, shareUser string) ([]*cap.Template, error) {
 	mapper := mysql.NewTableTemplateMapper(ss)
-	dbTplList, err := mapper.FindTemplatesByShareUserAndTableID(int64(shareUser), tableID)
+	dbTplList, err := mapper.FindTemplatesByShareUserAndTableID(shareUser, tableID)
 	if err != nil {
 		return nil, errors.Wrap(err).Log()
 	}
 	var tplList []*cap.Template
 	for _, dbTpl := range dbTplList {
-		if dbTpl.FCreateUser == int64(shareUser) {
+		if dbTpl.FCreateUser == shareUser {
 			continue
 		}
 		tpl := mapTpl(ctx, dbTpl)
@@ -244,7 +244,7 @@ func (tm *Manager) FindTemplatesByTableAndShareUser(ctx context.Context, ss *db.
 }
 
 // FindPublicTemplatesByTable ...
-func (tm *Manager) FindPublicTemplatesByTable(ctx context.Context, ss *db.Session, tableID string, currentUserID int) ([]*cap.Template, error) {
+func (tm *Manager) FindPublicTemplatesByTable(ctx context.Context, ss *db.Session, tableID string, currentUserID string) ([]*cap.Template, error) {
 	mapper := mysql.NewTableTemplateMapper(ss)
 	dbTplList, err := mapper.FindTemplates(mysql.FilterTableIDEquals(tableID),
 		mysql.FilterTableAccessEquals(int(cap.FileAccessType_TA_PUBLIC)))
@@ -253,7 +253,7 @@ func (tm *Manager) FindPublicTemplatesByTable(ctx context.Context, ss *db.Sessio
 	}
 	var tplList []*cap.Template
 	for _, dbTpl := range dbTplList {
-		if dbTpl.FCreateUser == int64(currentUserID) {
+		if dbTpl.FCreateUser == currentUserID {
 			continue
 		}
 		tpl := mapTpl(ctx, dbTpl)

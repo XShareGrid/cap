@@ -8,5 +8,9 @@ import (
 )
 
 func TestLoadOptionFromProtoEnum(t *testing.T) {
-	LoadOptionFromProtoEnum(cap.ValueType(0))
+	opt, err := LoadOptionFromProtoEnum(cap.ValueType(0))
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(opt)
 }

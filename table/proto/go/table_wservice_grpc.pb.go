@@ -32,6 +32,7 @@ const (
 	TableWService_GetTableRowsLite_FullMethodName      = "/cap.TableWService/GetTableRowsLite"
 	TableWService_GetOptions_FullMethodName            = "/cap.TableWService/GetOptions"
 	TableWService_DoRowFormAction_FullMethodName       = "/cap.TableWService/DoRowFormAction"
+	TableWService_DeleteRows_FullMethodName            = "/cap.TableWService/DeleteRows"
 )
 
 // TableWServiceClient is the client API for TableWService service.
@@ -78,6 +79,8 @@ type TableWServiceClient interface {
 	GetOptions(ctx context.Context, in *GetOptionsReq, opts ...grpc.CallOption) (*CommonRsp, error)
 	// 执行表单操作
 	DoRowFormAction(ctx context.Context, in *DoRowFormActionReq, opts ...grpc.CallOption) (*CommonRsp, error)
+	// 执行表单操作
+	DeleteRows(ctx context.Context, in *DeleteRowsReq, opts ...grpc.CallOption) (*CommonRsp, error)
 }
 
 type tableWServiceClient struct {
@@ -218,6 +221,16 @@ func (c *tableWServiceClient) DoRowFormAction(ctx context.Context, in *DoRowForm
 	return out, nil
 }
 
+func (c *tableWServiceClient) DeleteRows(ctx context.Context, in *DeleteRowsReq, opts ...grpc.CallOption) (*CommonRsp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommonRsp)
+	err := c.cc.Invoke(ctx, TableWService_DeleteRows_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TableWServiceServer is the server API for TableWService service.
 // All implementations should embed UnimplementedTableWServiceServer
 // for forward compatibility.
@@ -262,6 +275,8 @@ type TableWServiceServer interface {
 	GetOptions(context.Context, *GetOptionsReq) (*CommonRsp, error)
 	// 执行表单操作
 	DoRowFormAction(context.Context, *DoRowFormActionReq) (*CommonRsp, error)
+	// 执行表单操作
+	DeleteRows(context.Context, *DeleteRowsReq) (*CommonRsp, error)
 }
 
 // UnimplementedTableWServiceServer should be embedded to have
@@ -309,6 +324,9 @@ func (UnimplementedTableWServiceServer) GetOptions(context.Context, *GetOptionsR
 }
 func (UnimplementedTableWServiceServer) DoRowFormAction(context.Context, *DoRowFormActionReq) (*CommonRsp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DoRowFormAction not implemented")
+}
+func (UnimplementedTableWServiceServer) DeleteRows(context.Context, *DeleteRowsReq) (*CommonRsp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteRows not implemented")
 }
 func (UnimplementedTableWServiceServer) testEmbeddedByValue() {}
 
@@ -564,6 +582,24 @@ func _TableWService_DoRowFormAction_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableWService_DeleteRows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRowsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableWServiceServer).DeleteRows(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TableWService_DeleteRows_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableWServiceServer).DeleteRows(ctx, req.(*DeleteRowsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TableWService_ServiceDesc is the grpc.ServiceDesc for TableWService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -622,6 +658,10 @@ var TableWService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DoRowFormAction",
 			Handler:    _TableWService_DoRowFormAction_Handler,
+		},
+		{
+			MethodName: "DeleteRows",
+			Handler:    _TableWService_DeleteRows_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

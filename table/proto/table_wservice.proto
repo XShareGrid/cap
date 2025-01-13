@@ -527,6 +527,18 @@ message GetTableRowsLiteRsp {
   int32 total_results = 2;
 }
 
+
+// DeleteRowsReq 删除行列表请求
+message DeleteRowsReq {
+  string table_id = 1;
+  repeated string row_ids = 2;
+}
+
+// DeleteRowsRsp 删除行列表回复
+message DeleteRowsRsp {
+}
+
+
 // TableWService 表格服务
 // 每个子系统都可能提供该服务 /cap.TableWService，并统一通过EAP的端口暴露
 // 前端可使用http header["Subsystem"]或者["Referer"]来指定子系统
@@ -641,6 +653,14 @@ service TableWService {
   rpc DoRowFormAction(DoRowFormActionReq) returns (CommonRsp) {
     option (google.api.http) = {
       post : "/api/v1/table/DoRowFormAction"
+      body : "*"
+    };
+  };
+
+    // 执行表单操作
+  rpc DeleteRows(DeleteRowsReq) returns (CommonRsp) {
+    option (google.api.http) = {
+      post : "/api/v1/table/DeleteRows"
       body : "*"
     };
   };

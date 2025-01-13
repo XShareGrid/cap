@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/text/language"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
@@ -53,8 +52,6 @@ func (tws *TableWService) DBWrite() *mysql.DB {
 	return tws.dbWrite
 }
 
-var langCode = language.Make("zh-CN")
-
 func rspOK(data proto.Message) *cap.CommonRsp {
 	any, _ := anypb.New(data)
 	return &cap.CommonRsp{
@@ -65,7 +62,7 @@ func rspOK(data proto.Message) *cap.CommonRsp {
 }
 
 func rspErr(ctx context.Context, err error) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
+	langCode := i18n.GetLanguageTypeByMeta(ctx)
 	gErr := handle.Handle(ctx, err).Log().GRPCErr(codes.Unknown, langCode)
 	errMsg := gErr.Error()
 	if s, ok := status.FromError(gErr); ok {
@@ -82,7 +79,6 @@ func rspErr(ctx context.Context, err error) (*cap.CommonRsp, error) {
 
 // GetTableInfo 获取表信息
 func (t *TableWService) GetTableInfo(ctx context.Context, req *cap.GetTableInfoReq) (*cap.CommonRsp, error) {
-
 	rsp := &cap.GetTableInfoRsp{}
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
@@ -114,7 +110,6 @@ func isTempTable(ctx context.Context) bool {
 
 // GetTableTemplates 获取表模板信息
 func (t *TableWService) GetTableTemplates(ctx context.Context, req *cap.GetTableTemplatesReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableTemplatesRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
@@ -167,7 +162,7 @@ func (t *TableWService) GetTableTemplates(ctx context.Context, req *cap.GetTable
 
 // CreateTableTemplate 创建模板
 func (t *TableWService) CreateTableTemplate(ctx context.Context, req *cap.CreateTableTemplateReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
+	langCode := i18n.GetLanguageTypeByMeta(ctx)
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	rsp := &cap.CreateTableTemplateRsp{}
 	if isTempTable(ctx) {
@@ -214,7 +209,6 @@ func (t *TableWService) CreateTableTemplate(ctx context.Context, req *cap.Create
 
 // DeleteTableTemplate 删除模板
 func (t *TableWService) DeleteTableTemplate(ctx context.Context, req *cap.DeleteTableTemplateReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.DeleteTableTemplateRsp{}
 	ss, err := t.DBWrite().NewSessionWithCtx(ctx)
 	if err != nil {
@@ -239,7 +233,6 @@ func (t *TableWService) DeleteTableTemplate(ctx context.Context, req *cap.Delete
 
 // UpdateTableTemplate 更新模板
 func (t *TableWService) UpdateTableTemplate(ctx context.Context, req *cap.CreateTableTemplateReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	rsp := &cap.CreateTableTemplateRsp{}
 	if isTempTable(ctx) {
@@ -275,7 +268,6 @@ func (t *TableWService) UpdateTableTemplate(ctx context.Context, req *cap.Create
 
 // GetTableColumns 获取表列
 func (t *TableWService) GetTableColumns(ctx context.Context, req *cap.GetTableColumnsReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableColumnsRsp{}
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
@@ -292,7 +284,6 @@ func (t *TableWService) GetTableColumns(ctx context.Context, req *cap.GetTableCo
 
 // GetTableRows 获取表行
 func (t *TableWService) GetTableRows(ctx context.Context, req *cap.GetTableRowsReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableRowsRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
@@ -314,7 +305,6 @@ func (t *TableWService) GetTableRows(ctx context.Context, req *cap.GetTableRowsR
 
 // GetTableRowsLite 简单版获取行列表接口
 func (t *TableWService) GetTableRowsLite(ctx context.Context, req *cap.GetTableRowsLiteReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableRowsLiteRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
@@ -323,7 +313,7 @@ func (t *TableWService) GetTableRowsLite(ctx context.Context, req *cap.GetTableR
 	defer func() {
 		ss.Close(err)
 	}()
-	rsp, err = data.GlobalManager().FindRowsLite(ctx, ss, req.TableId, req.Query)
+	rsp, err = data.GlobalManager().FindRowsLite(ctx, ss, req.TableId, req.Query, req.Page, req.PageSize)
 	if err != nil {
 		return rspErr(ctx, err)
 	}
@@ -332,7 +322,6 @@ func (t *TableWService) GetTableRowsLite(ctx context.Context, req *cap.GetTableR
 
 // GetTableRowByID 精确获取一行
 func (t *TableWService) GetTableRowByID(ctx context.Context, req *cap.GetTableRowByIDReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableRowByIDRsp{}
 	ss, err := t.DBRead().NewSessionWithCtx(ctx)
 	if err != nil {
@@ -354,7 +343,6 @@ func (t *TableWService) GetTableRowByID(ctx context.Context, req *cap.GetTableRo
 
 // DoExportTable 导出表
 func (t *TableWService) DoExportTable(ctx context.Context, req *cap.GetTableRowsReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.ExportTableRsp{}
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
@@ -445,7 +433,6 @@ func (t *TableWService) DoExportTable(ctx context.Context, req *cap.GetTableRows
 
 // GetTableColumnOptions 获取列选项列表（仅ValueType = VT_OPTION时可获取）
 func (t *TableWService) GetTableColumnOptions(ctx context.Context, req *cap.GetTableColumnOptionsReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.GetTableColumnOptionsRsp{}
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
 	if err != nil {
@@ -472,7 +459,7 @@ func (t *TableWService) GetTableColumnOptions(ctx context.Context, req *cap.GetT
 
 // GetOptions 根据Option ID获取
 func (t *TableWService) GetOptions(ctx context.Context, req *cap.GetOptionsReq) (*cap.CommonRsp, error) {
-	//langCode = i18n.GetLanguageTypeByMeta(ctx)
+	//langCode := i18n.GetLanguageTypeByMeta(ctx)
 	userLanguage := i18n.GetUserLanguageByMeta(ctx)
 	rsp := &cap.GetTableColumnOptionsRsp{}
 	opts, err := registry.GlobalTableRegistry().OptionReg.GetOptionsWithI18nCtx(ctx, req.OptionTypeID)
@@ -496,7 +483,6 @@ func (t *TableWService) GetOptions(ctx context.Context, req *cap.GetOptionsReq) 
 
 // DoRowFormAction ...
 func (t *TableWService) DoRowFormAction(ctx context.Context, req *cap.DoRowFormActionReq) (*cap.CommonRsp, error) {
-	langCode = i18n.GetLanguageTypeByMeta(ctx)
 	rsp := &cap.DoRowFormActionRsp{}
 	ss, err := t.DBWrite().NewSessionWithCtx(ctx)
 	if err != nil {

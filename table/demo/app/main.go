@@ -97,7 +97,6 @@ func main() {
 		// 启动gateway
 		conn, err := grpc.NewClient(
 			gRPCPort,
-			grpc.WithBlock(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {

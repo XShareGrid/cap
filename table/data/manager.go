@@ -138,7 +138,8 @@ func (d *Manager) FindRows(grpcCtx context.Context, ss *mysql.Session, tpl *cap.
 }
 
 // FindRowsLite ..
-func (d *Manager) FindRowsLite(grpcCtx context.Context, ss *mysql.Session, tableID string, query string) (rsp *cap.GetTableRowsLiteRsp, err error) {
+func (d *Manager) FindRowsLite(grpcCtx context.Context, ss *mysql.Session,
+	tableID string, query string, page, pageSize int32) (rsp *cap.GetTableRowsLiteRsp, err error) {
 	rsp = &cap.GetTableRowsLiteRsp{}
 	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(tableID)
 	if err != nil {
@@ -213,7 +214,7 @@ func (d *Manager) FindRowsLite(grpcCtx context.Context, ss *mysql.Session, table
 		outputCols[i] = col.ID
 	}
 	tpl := utils.NewTmpTpl(tableID, conditions, outputCols)
-	r, err := d.findRows(grpcCtx, ss, tpl, &cap.PageParam{}, &cap.OrderParam{}, false)
+	r, err := d.findRows(grpcCtx, ss, tpl, &cap.PageParam{Page: page, PageSize: pageSize}, &cap.OrderParam{}, false)
 	if err != nil {
 		return rsp, errors.Wrap(err).Log()
 	}

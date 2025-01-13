@@ -4,8 +4,8 @@ app:
   docport: 10086
   
 mysql:
-  host: 192.168.0.109
+  host: 10.10.201.32
   port: 3306
   user: root
-  password: 125801
+  password: 123456
   database: tabletest

@@ -657,7 +657,7 @@ service TableWService {
     };
   };
 
-    // 执行表单操作
+    // 删除表行
   rpc DeleteRows(DeleteRowsReq) returns (CommonRsp) {
     option (google.api.http) = {
       post : "/api/v1/table/DeleteRows"

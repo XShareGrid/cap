@@ -1,6 +1,8 @@
 # PROTOC VERSION 29.3
 # https://github.com/protocolbuffers/protobuf/releases/tag/v29.3
-export CAP_PROTOC_PATH=/usr/local/bin/protoc293
+if [ -z "${CAP_PROTOC_PATH}" ]; then
+  export CAP_PROTOC_PATH=/usr/local/bin/protoc293
+fi
 
 export PROTOC=$CAP_PROTOC_PATH/bin/protoc
 

@@ -1,10 +1,15 @@
 package data
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/XShareGrid/cap/database/mysql"
 	db "github.com/XShareGrid/cap/database/mysql"
+	"github.com/XShareGrid/cap/table/data/driver"
+	cap "github.com/XShareGrid/cap/table/proto/go"
+	"github.com/XShareGrid/cap/table/registry"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -77,4 +82,28 @@ func Test_linkAddQuery(t *testing.T) {
 	fmt.Println(linkAddQuery("/abc/def?aaa=b", "user", "111"))
 	fmt.Println(linkAddQuery("http://1.2.3.4:87476/abc/def?aaa=b", "user", "111"))
 	fmt.Println(linkAddQuery("https://1.2.3.4:87476/abc/def?aaa=b", "user", "111"))
+}
+
+type TestDriver struct {
+}
+
+func (t TestDriver) FindRows(ctx context.Context, ss *mysql.Session, tmd registry.TableMetaData, conditions []*driver.Condition, outputColumns []string,
+	aggCols []*driver.AggregateColumn, pageParam *cap.PageParam, orderParam *cap.OrderParam) (result *driver.RowsResult, err error) {
+	fmt.Println("driver.Driver")
+	return nil, nil
+}
+
+func (t TestDriver) DeleteRows(ctx context.Context, ss *mysql.Session, tmd registry.TableMetaData, rowIDs []string) (err error) {
+	fmt.Println("driver.Deletable")
+	return nil
+}
+
+func TestManager_RegisterDriver(t *testing.T) {
+	GlobalManager().RegisterDriver("test", TestDriver{})
+	d, ok := GlobalManager().m.Load("test")
+	if !ok {
+		t.Fatal("not found")
+	}
+	d.(driver.Driver).FindRows(nil, nil, nil, nil, nil, nil, nil, nil)
+	d.(driver.Deletable).DeleteRows(nil, nil, nil, nil)
 }

@@ -16,3 +16,6 @@ var ErrTableColumnNotLinkable = errors.New("table(%s.%s) can not be linked, colu
 
 // ErrNotResultForID ...
 var ErrNotResultForID = errors.New("no result for id(%s)")
+
+// ErrDriverNotSupportDelete ...
+var ErrDriverNotSupportDelete = errors.New("driver not support delete")

@@ -512,6 +512,23 @@ func (t *TableWService) DoRowFormAction(ctx context.Context, req *cap.DoRowFormA
 	return rspOK(rsp), nil
 }
 
+// DoRowFormAction ...
+func (t *TableWService) DeleteRows(ctx context.Context, req *cap.DeleteRowsReq) (*cap.CommonRsp, error) {
+	ss, err := t.DBWrite().NewSessionWithCtx(ctx)
+	if err != nil {
+		return rspErr(ctx, err)
+	}
+	defer func() {
+		ss.Close(err)
+	}()
+	err = data.GlobalManager().DeleteRows(ctx, ss, req)
+	if err != nil {
+		errors.Wrap(err).PrintStackTrace()
+		return rspErr(ctx, err)
+	}
+	return rspOK(&cap.DeleteRowsRsp{}), nil
+}
+
 // NewTableWService creates table service
 func NewTableWService(dbWrite *mysql.DB, dbRead *mysql.DB, userInfoProvider UserInfoProvider) *TableWService {
 	template.AIP = func(accountID string) (userName string, displayName string, err error) {

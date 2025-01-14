@@ -737,3 +737,19 @@ func mapStructToTableRow(userLanguage string, v interface{}, outputColumns []str
 	}
 	return row, nil
 }
+
+// DeleteRows ...
+func (d *Manager) DeleteRows(grpcCtx context.Context, ss *mysql.Session, req *cap.DeleteRowsReq) error {
+	dv, ok := d.m.Load(req.TableId)
+	if !ok {
+		return errors.Wrap(ErrDriverNotFoundForTable).FillDebugArgs(req.TableId).Log()
+	}
+	tmd, err := registry.GlobalTableRegistry().TableMetaReg.Find(req.TableId)
+	if err != nil {
+		return errors.Wrap(err).Log()
+	}
+	if dt, ok := dv.(driver.Deletable); ok {
+		return dt.DeleteRows(grpcCtx, ss, tmd, req.RowIds)
+	}
+	return errors.Wrap(ErrDriverNotSupportDelete).FillDebugArgs(req.TableId).Log()
+}

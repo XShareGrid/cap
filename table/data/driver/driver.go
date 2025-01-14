@@ -59,3 +59,8 @@ type Driver interface {
 	FindRows(ctx context.Context, ss *mysql.Session, tmd registry.TableMetaData, conditions []*Condition, outputColumns []string,
 		aggCols []*AggregateColumn, pageParam *cap.PageParam, orderParam *cap.OrderParam) (result *RowsResult, err error)
 }
+
+// Deletable 可删除
+type Deletable interface {
+	DeleteRows(ctx context.Context, ss *mysql.Session, tmd registry.TableMetaData, rowIDs []string) (err error)
+}

@@ -64,3 +64,15 @@ type Driver interface {
 type Deletable interface {
 	DeleteRows(ctx context.Context, ss *mysql.Session, tmd registry.TableMetaData, rowIDs []string) (err error)
 }
+
+// RowsResultStream 结果
+type RowsResultStream interface {
+	// 获取下一行结果，空代表结束
+	Next() (interface{}, error)
+}
+
+// Streamer 流式查询，应对大量数据导出，不支持聚合，不支持分页
+type Streamer interface {
+	FindRowsStream(ctx context.Context, ss *mysql.Session, tmd registry.TableMetaData, conditions []*Condition, outputColumns []string,
+		orderParam *cap.OrderParam) (result *RowsResultStream, err error)
+}
